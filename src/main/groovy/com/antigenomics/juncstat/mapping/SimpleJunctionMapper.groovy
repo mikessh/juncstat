@@ -38,10 +38,10 @@ class SimpleJunctionMapper implements JunctionMapper {
         transcripts1.each { Transcript transcript ->
             // same transcript mappings only
             def exon1 = transcript.exons.find { it.overlap(junction.range1) },
-                exon2 = transcript.exons.find { it.overlap(junction.range1) }
+                exon2 = transcript.exons.find { it.overlap(junction.range2) }
 
             if (exon1 && exon2) {
-                mappings << new Mapping(exon1, exon2)
+                mappings << transcript.strand ? new Mapping(exon1, exon2) : new Mapping(exon2, exon1)
             }
         }
         
