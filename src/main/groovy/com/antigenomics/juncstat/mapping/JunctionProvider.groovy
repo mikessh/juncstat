@@ -18,15 +18,15 @@ package com.antigenomics.juncstat.mapping
 
 import com.antigenomics.juncstat.Parser
 
-class JunctionList {
-    final List<Junction> junctions
+class JunctionProvider {
 
-    JunctionList(InputStream plainTextTableIS, Parser<Junction> parser) {
-        this.junctions = new ArrayList<>(100000)
+    static List<Junction> load(InputStream plainTextTableIS, Parser<Junction> parser) {
+        def junctions = new ArrayList<>(100000)
         plainTextTableIS.splitEachLine(parser.sep) {
             if (!it[0].startsWith(parser.comment)) {
                 junctions << parser.parse(it)
             }
         }
+        junctions
     }
 }
