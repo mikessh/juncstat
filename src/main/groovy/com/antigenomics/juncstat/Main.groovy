@@ -28,11 +28,11 @@ cli.h("Display this help message")
 
 def opt = cli.parse(args)
 
-if (opt.h) {
+if (opt.h || opt == null) {
     cli.usage()
     System.exit(3)
 }
-if (opt == null || opt.arguments().size() != 4) {
+if (opt.arguments().size() != 4) {
     println "[ERROR] Too few arguments provided"
     System.exit(3)
 }
@@ -78,6 +78,9 @@ sout "Loaded ${genomicInfoProvider.transcriptsCount} transcripts"
 
 
 new File(outputPrefix + ".gene.txt").withPrintWriter { pw ->
+    
+    pw.println("condition\tsample\t" + GeneStats.HEADER)
+    
     junctionFiles.eachWithIndex { String sample, int i ->
 
         sout "Loading junctions from $sample"
@@ -106,7 +109,6 @@ new File(outputPrefix + ".gene.txt").withPrintWriter { pw ->
         sout "Got statistics for ${geneStats.size()} genes"
 
         sout "Writing output"
-        pw.println("condition\tsample\t" + GeneStats.HEADER)
         def condition = conditions[i]
         geneStats.each {
             pw.println(condition + "\t" + sample + "\t" + it.toString())
