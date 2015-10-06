@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 class JunctionMappingAccumulator {
     final Map<Transcript, TranscriptCounters> transcriptCounters = new HashMap<>()
+    final AtomicLong mappedJunctionsCounter = new AtomicLong(), totalMappingsCounter = new AtomicLong()
 
     JunctionMappingAccumulator(GenomicInfoProvider genomicInfoProvider) {
         Map<String, AtomicLong> geneCounters = new HashMap<>()
@@ -51,6 +52,11 @@ class JunctionMappingAccumulator {
                     outOfFrameCounter.addAndGet(score)
                 }
             }
+            totalMappingsCounter.incrementAndGet()
+        }
+
+        if (!mappedJunction.mappings.empty) {
+            mappedJunctionsCounter.incrementAndGet()
         }
     }
 
@@ -85,5 +91,15 @@ class JunctionMappingAccumulator {
                             exonCount
                     )
                 }
+    }
+
+    long getMappedJunctionsCount
+    {
+        mappedJunctionsCounter.get()
+    }
+    
+    long getTotalMappingsCount
+    {
+        totalMappingsCounter.get()
     }
 }

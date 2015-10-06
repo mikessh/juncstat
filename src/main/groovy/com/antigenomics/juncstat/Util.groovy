@@ -24,4 +24,8 @@ class Util {
                 new GZIPInputStream(new FileInputStream(fileName)) :
                 new FileInputStream(fileName)
     }
+    
+    static void sout(String message){
+        println("[${new Date()} JUNCSTAT] $message")
+    }
 }

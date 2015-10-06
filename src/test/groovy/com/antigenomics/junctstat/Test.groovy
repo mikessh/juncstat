@@ -17,7 +17,7 @@
 package com.antigenomics.junctstat
 
 import com.antigenomics.juncstat.genomic.GenomicInfoProvider
-import com.antigenomics.juncstat.mapping.JunctionList
+import com.antigenomics.juncstat.mapping.JunctionProvider
 import com.antigenomics.juncstat.mapping.SimpleJunctionMapper
 import com.antigenomics.juncstat.parser.EnsGeneParser
 import com.antigenomics.juncstat.parser.TophatJunctionParser
@@ -40,11 +40,11 @@ class Test {
             geneStream = new ByteArrayInputStream(geneTxt.getBytes())
 
         def giProvider = new GenomicInfoProvider(geneStream, new EnsGeneParser())
-        def juncList = new JunctionList(juncStream, new TophatJunctionParser())
-        
+        def juncList = JunctionProvider.load(juncStream, new TophatJunctionParser())
+
         def mapper = new SimpleJunctionMapper(giProvider)
-        
-        juncList.junctions.each {
+
+        juncList.each {
             assert !mapper.map(it).mappings.empty
         }
     }

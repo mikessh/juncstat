@@ -22,9 +22,11 @@ import com.antigenomics.juncstat.Range
 class GenomicInfoProvider {
     final static int binSize = 100_000
     final Map<String, List<Transcript>> transcriptMap
+    final int transcriptsCount
 
     GenomicInfoProvider(InputStream plainTextTableIS, Parser<Transcript> parser) {
         this.transcriptMap = new HashMap<>()
+        int transcriptsCount = 0
         plainTextTableIS.splitEachLine(parser.sep) {
             if (!it[0].startsWith(parser.comment)) {
                 def transcript = parser.parse(it)
@@ -36,8 +38,12 @@ class GenomicInfoProvider {
                     }
                     transcriptList.add(transcript)
                 }
+
+                transcriptsCount++
             }
         }
+        
+        this.transcriptsCount = transcriptsCount
     }
 
     List<Transcript> getTranscripts(String chr, Range range) {
