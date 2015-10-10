@@ -19,16 +19,32 @@ package com.antigenomics.juncstat.mapping
 import com.antigenomics.juncstat.Range
 
 class Junction {
-    final String chr
+    final String id, chr
     final Range range1, range2
-    final boolean frame
+    final boolean strand
     final int score
 
-    Junction(String chr, Range range1, Range range2, boolean frame, int score) {
+    Junction(String id, String chr, Range range1, Range range2, boolean strand, int score) {
+        this.id = id
         this.chr = chr
         this.range1 = range1
         this.range2 = range2
-        this.frame = frame
+        this.strand = strand
         this.score = score
+    }
+
+    boolean equals(o) {
+        if (this.is(o)) return true
+        if (getClass() != o.class) return false
+
+        Junction junction = (Junction) o
+
+        if (id != junction.id) return false
+
+        return true
+    }
+
+    int hashCode() {
+        return id.hashCode()
     }
 }

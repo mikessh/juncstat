@@ -35,4 +35,27 @@ class Range {
     boolean overlap(Range other) {
         start <= other.end && other.start <= end
     }
+
+    int size() {
+        end - start
+    }
+
+    boolean equals(o) {
+        if (this.is(o)) return true
+        if (getClass() != o.class) return false
+
+        Range range = (Range) o
+
+        if (end != range.end) return false
+        if (start != range.start) return false
+
+        return true
+    }
+
+    int hashCode() {
+        int result
+        result = start
+        result = 31 * result + end
+        return result
+    }
 }

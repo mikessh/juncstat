@@ -24,4 +24,8 @@ class MappedJunction {
         this.mappings = mappings
         this.junction = junction
     }
+
+    boolean isMapped() {
+        !mappings.empty
+    }
 }

@@ -20,16 +20,11 @@ import com.antigenomics.juncstat.genomic.Exon
 
 class Mapping {
     final Exon exon1, exon2
-    final int frameDifference
+    final boolean outOfFrame
 
     Mapping(Exon exon1, Exon exon2) {
         this.exon1 = exon1
         this.exon2 = exon2
-        this.frameDifference = exon1.frame >= 0 && exon2.frame >= 0 ?
-                (exon1.frame + exon2.frame) % 3 : 0
-    }
-
-    boolean isOutOfFrame() {
-        frameDifference != 0
+        this.outOfFrame = exon1.frame >= 0 && exon2.frame >= 0 && (exon1.remainder != exon2.frame)
     }
 }

@@ -20,7 +20,7 @@ import com.antigenomics.juncstat.Range
 
 class Transcript extends Range {
     final String chr, id, geneId
-    final int cdsStart, cdsEnd
+    final Range cds
     final boolean strand
     final List<Exon> exons = new ArrayList<>()
 
@@ -29,9 +29,12 @@ class Transcript extends Range {
         this.chr = chr
         this.id = id
         this.geneId = geneId
-        this.cdsStart = cdsStart
-        this.cdsEnd = cdsEnd
+        this.cds = new Range(cdsStart, cdsEnd)
         this.strand = strand
+    }
+
+    boolean isCoding() {
+        cds.size() > 0
     }
 
     boolean equals(o) {
