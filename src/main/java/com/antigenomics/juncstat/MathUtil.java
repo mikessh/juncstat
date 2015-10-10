@@ -14,28 +14,19 @@
  * limitations under the License.
  */
 
-package com.antigenomics.juncstat.stats
+package com.antigenomics.juncstat;
 
-import java.util.concurrent.atomic.AtomicLong
+import java.util.Random;
 
-class TranscriptCounters {
-    final AtomicLong geneCounter,
-                     transcriptCounter = new AtomicLong(),
-                     outOfFrameCounter = new AtomicLong()
+public class MathUtil {
+    private final static Random rnd = new Random(51102);
 
-    TranscriptCounters(AtomicLong geneCounter) {
-        this.geneCounter = geneCounter
-    }
-
-    long getGeneCount() {
-        geneCounter.get()
-    }
-
-    long getTranscriptCount() {
-        transcriptCounter.get()
-    }
-
-    long getOutOfFrameCount() {
-        outOfFrameCounter.get()
+    public static <T> void shuffle(final T[] arr) {
+        for (int i = arr.length - 1; i > 0; i--) {
+            int index = rnd.nextInt(i + 1);
+            T tmp = arr[index];
+            arr[index] = arr[i];
+            arr[i] = tmp;
+        }
     }
 }

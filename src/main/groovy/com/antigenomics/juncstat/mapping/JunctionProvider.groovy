@@ -16,6 +16,7 @@
 
 package com.antigenomics.juncstat.mapping
 
+import com.antigenomics.juncstat.MathUtil
 import com.antigenomics.juncstat.Parser
 
 class JunctionProvider {
@@ -28,5 +29,37 @@ class JunctionProvider {
             }
         }
         junctions
+    }
+
+    static List<Junction> downSample(List<Junction> junctions, int size) {
+        int totalScore = (int) junctions.sum { it.score }
+
+        if (totalScore < size) {
+            return new ArrayList<>(junctions)
+        }
+
+        println totalScore
+
+        def flattenedJunctions = new Junction[totalScore]
+        int counter = 0
+        junctions.each {
+            for (int i = 0; i < it.score; i++) {
+                flattenedJunctions[counter++] = it
+            }
+        }
+
+        MathUtil.shuffle(flattenedJunctions)
+
+        def countMap = new HashMap<Junction, Integer>()
+
+        for (int i = 0; i < size; i++) {
+            def junction = flattenedJunctions[i]
+            countMap.put(junction, (countMap[junction] ?: 0) + 1)
+        }
+
+        countMap.collect {
+            def junction = it.key, score = it.value
+            new Junction(junction.id, junction.chr, junction.range1, junction.range2, junction.strand, score)
+        }
     }
 }
