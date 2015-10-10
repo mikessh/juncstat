@@ -59,4 +59,10 @@ class EnsGeneParser implements Parser<Transcript> {
 
         transcript
     }
+
+    @Override
+    boolean isOneBased() {
+        // IMPORTANT: 0-based table, no offsetting needed
+        false
+    }
 }

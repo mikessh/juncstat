@@ -28,11 +28,17 @@ class TophatJunctionParser implements Parser<Junction> {
         // 0     1       2       3            4 5 6       7       8       9 10    11
         // chr20 9353709 9360718 JUNC00000552 2 + 9353709 9360718 255,0,0 2 42,18 0,6991
         def overhangs = row[10].split(",").collect { it.toInteger() }
-        new Junction(row[0],
+        new Junction(row[3], row[0],
                 new Range(row[1].toInteger(), row[1].toInteger() + overhangs[0]),
                 new Range(row[2].toInteger() - overhangs[1], row[2].toInteger()),
                 row[5] == "+",
                 row[4].toInteger()
         )
+    }
+
+    @Override
+    boolean isOneBased() {
+        // IMPORTANT: 0-based table, no offsetting needed
+        false
     }
 }

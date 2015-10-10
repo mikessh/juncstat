@@ -22,4 +22,6 @@ interface Parser<T> {
     String getComment()
 
     T parse(List<String> row)
+    
+    boolean isOneBased()
 }
