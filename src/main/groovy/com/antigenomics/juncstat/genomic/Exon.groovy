@@ -19,12 +19,19 @@ package com.antigenomics.juncstat.genomic
 import com.antigenomics.juncstat.Range
 
 class Exon extends Range {
-    final int frame
+    final int frame, remainder
     final Transcript parent
 
     Exon(int start, int end, Transcript parent, int frame) {
         super(start, end)
         this.parent = parent
         this.frame = frame
+        this.remainder = frame >= 0 ? (end -
+                start - 3 + frame // start of first complete codon
+        ) % 3 : -1
+    }
+
+    boolean isCoding() {
+        parent.isCoding() ? this.overlap(parent.cds) : false
     }
 }
