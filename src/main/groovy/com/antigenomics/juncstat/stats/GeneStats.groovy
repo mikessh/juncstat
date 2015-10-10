@@ -16,30 +16,39 @@
 
 package com.antigenomics.juncstat.stats
 
-class GeneStats {
-    final String geneId
-    final long totalCount, weightedOutOfFrameCount, totalOutOfFrameCount
-    final int expressedTranscripts, totalTranscripts, exonCount
+import com.antigenomics.juncstat.genomic.Exon
+import com.antigenomics.juncstat.genomic.Transcript
 
-    GeneStats(String geneId,
-              long totalCount, long weightedOutOfFrameCount, long totalOutOfFrameCount,
-              int expressedTranscripts, int totalTranscripts, int exonCount) {
-        this.geneId = geneId
-        this.totalCount = totalCount
-        this.weightedOutOfFrameCount = weightedOutOfFrameCount
-        this.totalOutOfFrameCount = totalOutOfFrameCount
-        this.expressedTranscripts = expressedTranscripts
-        this.totalTranscripts = totalTranscripts
-        this.exonCount = exonCount
+import java.util.concurrent.atomic.AtomicInteger
+
+class GeneStats {
+    final AtomicInteger scoreCounter = new AtomicInteger(),
+                        mappingCounter = new AtomicInteger(),
+                        oofMappingCounter = new AtomicInteger()
+    final Set<Exon> exons = new HashSet<>()
+    final List<Transcript> transcripts = new ArrayList<>()
+
+    GeneStats() {
     }
 
-    static
-    final String HEADER = "gene.id\ttotal.count\t" +
-            "weighted.out.of.frame.count\ttotal.out.of.frame.count\texpressed.transcripts\ttotal.transcripts\t" +
-            "exon.count"
+    void add(Transcript transcript) {
+        transcripts.add(transcript)
+        exons.addAll(transcript.exons)
+    }
 
-    @Override
-    String toString() {
-        [geneId, totalCount, weightedOutOfFrameCount, totalOutOfFrameCount, expressedTranscripts, totalTranscripts, exonCount].join("\t")
+    int getCodingExonCount() {
+        exons.findAll { it.coding }.size()
+    }
+
+    int getScore() {
+        scoreCounter.get()
+    }
+
+    int getMappings() {
+        mappingCounter.get()
+    }
+
+    int getOofMappings() {
+        oofMappingCounter.get()
     }
 }

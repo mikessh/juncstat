@@ -31,18 +31,20 @@ class GenomicInfoProvider {
             if (!it[0].startsWith(parser.comment)) {
                 def transcript = parser.parse(it)
 
-                bin(transcript.chr, transcript).each { // transcript can span several bins
-                    def transcriptList = transcriptMap[it]
-                    if (transcriptList == null) {
-                        transcriptMap.put(it, transcriptList = new ArrayList<Transcript>())
+                if (transcript.coding) {
+                    bin(transcript.chr, transcript).each { // transcript can span several bins
+                        def transcriptList = transcriptMap[it]
+                        if (transcriptList == null) {
+                            transcriptMap.put(it, transcriptList = new ArrayList<Transcript>())
+                        }
+                        transcriptList.add(transcript)
                     }
-                    transcriptList.add(transcript)
-                }
 
-                transcriptsCount++
+                    transcriptsCount++
+                }
             }
         }
-        
+
         this.transcriptsCount = transcriptsCount
     }
 

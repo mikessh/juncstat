@@ -17,25 +17,23 @@
 package com.antigenomics.juncstat.stats
 
 import com.antigenomics.juncstat.genomic.GenomicInfoProvider
-import com.antigenomics.juncstat.genomic.Transcript
 import com.antigenomics.juncstat.mapping.MappedJunction
 
 import java.util.concurrent.atomic.AtomicLong
 
 class JunctionMappingAccumulator {
-    final Map<Transcript, TranscriptCounters> transcriptCounters = new HashMap<>()
+    final Map<String, GeneStats> countersByGene = new HashMap<>()
     final AtomicLong mappedJunctionsCounter = new AtomicLong(), totalMappingsCounter = new AtomicLong()
 
     JunctionMappingAccumulator(GenomicInfoProvider genomicInfoProvider) {
-        Map<String, AtomicLong> geneCounters = new HashMap<>()
 
         genomicInfoProvider.transcriptMap.values().each {
             it.each {
-                def geneCounter = geneCounters[it.geneId]
-                if (geneCounter == null) {
-                    geneCounters.put(it.geneId, geneCounter = new AtomicLong())
+                def geneStats = countersByGene[it.geneId]
+                if (geneStats == null) {
+                    countersByGene.put(it.geneId, geneStats = new GeneStats())
                 }
-                transcriptCounters.put(it, new TranscriptCounters(geneCounter))
+                geneStats.add(it)
             }
         }
     }
@@ -44,37 +42,40 @@ class JunctionMappingAccumulator {
         int score = mappedJunction.junction.score
 
         mappedJunction.mappings.each { mapping ->
-            // only same transcript as of now
-            transcriptCounters[mapping.exon1.parent].with {
-                geneCounter.addAndGet(score)
-                transcriptCounter.addAndGet(score)
+            def geneId = mapping.exon1.parent.geneId
+            countersByGene[geneId].with {
+                it.scoreCounter.addAndGet(score)
+                it.mappingCounter.incrementAndGet()
                 if (mapping.outOfFrame) {
-                    outOfFrameCounter.addAndGet(score)
+                    it.oofMappingCounter.incrementAndGet()
                 }
             }
+
             totalMappingsCounter.incrementAndGet()
         }
 
-        if (!mappedJunction.mappings.empty) {
+        if (mappedJunction.mapped) {
             mappedJunctionsCounter.incrementAndGet()
         }
     }
 
+    /*
     List<GeneStats> collectGeneStats() {
-        transcriptCounters.entrySet().groupBy { it.key.geneId }.
+        countersByGene.entrySet().groupBy { it.key.geneId }.
                 collect {
                     String geneId = it.key
-                    List<Map.Entry<Transcript, TranscriptCounters>> entries = it.value
+                    List<Map.Entry<Transcript, TranscriptCounter>> entries = it.value
 
-                    long totalCount = entries.first().value.geneCount, oofCount = 0
+                    long totalCount = 0, oofCount = 0
                     double weightedOofCount = 0
                     int expressedTranscripts = 0, totalTranscripts = entries.size()
 
                     int exonCount = 0
                     entries.each {
-                        int transcriptCount = it.value.transcriptCount
-                        weightedOofCount += it.value.outOfFrameCount * it.value.transcriptCount
+                        int transcriptCount = it.value.count
+                        weightedOofCount += it.value.outOfFrameCount * transcriptCount
                         oofCount += it.value.outOfFrameCount
+                        totalCount += transcriptCount
                         if (transcriptCount > 0) {
                             expressedTranscripts++
                         }
@@ -86,18 +87,18 @@ class JunctionMappingAccumulator {
                     }
 
                     new GeneStats(geneId,
-                            totalCount, (long) weightedOofCount, oofCount,
+                            geneCounters[geneId].get(), totalCount, (long) weightedOofCount, oofCount,
                             expressedTranscripts, totalTranscripts,
                             exonCount
                     )
                 }
-    }
+    }*/
 
     long getMappedJunctionsCount
     {
         mappedJunctionsCounter.get()
     }
-    
+
     long getTotalMappingsCount
     {
         totalMappingsCounter.get()

@@ -2,14 +2,12 @@ package com.antigenomics.juncstat
 
 import com.antigenomics.juncstat.genomic.GenomicInfoProvider
 import com.antigenomics.juncstat.mapping.JunctionProvider
+import com.antigenomics.juncstat.mapping.MappedJunction
 import com.antigenomics.juncstat.mapping.SimpleJunctionMapper
 import com.antigenomics.juncstat.parser.EnsGeneParser
 import com.antigenomics.juncstat.parser.TophatJunctionParser
-import com.antigenomics.juncstat.stats.GeneStats
 import com.antigenomics.juncstat.stats.JunctionMappingAccumulator
 import groovyx.gpars.GParsPool
-
-import java.util.concurrent.atomic.AtomicLong
 
 import static com.antigenomics.juncstat.Util.sout
 
@@ -20,6 +18,8 @@ cli.s(args: 1, argName: "name",
         "Software used to generate junctions file. Allowed values: tophat. [default=tophat]")
 cli.t(args: 1, argName: "name",
         "Transcript table format. Allowed values: ensGene. [default=ensGene]")
+cli.x(args: 1, argName: "score",
+        "Normalize junction list to a given total score. [default=1000000]")
 
 // Misc
 cli.h("Display this help message")
@@ -40,7 +40,7 @@ if (opt.arguments().size() != 4) {
 def genomicFile = opt.arguments()[0],
     junctionFiles = opt.arguments()[1].split(","),
     conditions = opt.arguments()[2].split(","),
-    outputPrefix = args[3]
+    outputPrefix = opt.arguments()[3]
 
 if (junctionFiles.size() != conditions.size()) {
     println "[ERROR] Number of input files and conditions should match"
@@ -48,6 +48,7 @@ if (junctionFiles.size() != conditions.size()) {
 }
 
 def software = opt.s ?: "tophat", tableFormat = opt.t ?: "ensgene",
+    size = (opt.x ?: "5000000").toInteger(),
     threadCount = Runtime.runtime.availableProcessors()
 
 def transcriptTableParser = null, junctionsFileParser = null
@@ -73,45 +74,52 @@ switch (software.toLowerCase()) {
 sout "Loading genomic info"
 def genomicInfoProvider = new GenomicInfoProvider(Util.getStream(genomicFile), transcriptTableParser)
 def mapper = new SimpleJunctionMapper(genomicInfoProvider)
-def accumulator = new JunctionMappingAccumulator(genomicInfoProvider)
 sout "Loaded ${genomicInfoProvider.transcriptsCount} transcripts"
 
 
-new File(outputPrefix + ".gene.txt").withPrintWriter { pw ->
-    
-    pw.println("condition\tsample\t" + GeneStats.HEADER)
-    
+new File(outputPrefix + ".genestat.txt").withPrintWriter { pw ->
+    // pw.println("condition\tsample\tscore\tmappings\toof.mapping")
+    pw.println("condition\tsample\tgene\tscore\tmappings\toof.mappings\tcoding.exons\ttranscripts")
+
     junctionFiles.eachWithIndex { String sample, int i ->
+        def accumulator = new JunctionMappingAccumulator(genomicInfoProvider)
 
         sout "Loading junctions from $sample"
         def junctionList = JunctionProvider.load(Util.getStream(sample), junctionsFileParser)
-        sout "Loaded ${junctionList.size()} junctions"
+        sout "Loaded ${junctionList.size()} junctions, down-sampling to $size"
+        junctionList = JunctionProvider.downSample(junctionList, size)
 
-        sout "Mapping and counting"
-        def counter = new AtomicLong()
         GParsPool.withPool threadCount, {
-            junctionList.eachParallel {
-                accumulator.update(mapper.map(it))
+            sout "Mapping"
+            Collection<MappedJunction> mappedJunctions = junctionList.collectParallel { mapper.map(it) }
 
-                int count = counter.incrementAndGet()
-                if (count % 100000 == 0) {
-                    sout "Processed $count junctions of ${junctionList.size()}. " +
-                            "Mapped ${accumulator.mappedJunctionsCounter}, ${accumulator.totalMappingsCounter} total mappings."
+            sout "Estimating gene level stats"
+            mappedJunctions.eachParallel { accumulator.update(it) }
+
+            sout "Finished processing ${junctionList.size()} junctions. " +
+                    "Mapped ${accumulator.mappedJunctionsCounter}, ${accumulator.totalMappingsCounter} total mappings."
+
+            sout "Estimating OOF scores and writing output"
+            def condition = conditions[i]
+
+            /*
+            mappedJunctions.each { MappedJunction mj ->
+                int score = mj.junction.score, mappings = 0, oofMappings = 0
+                mj.mappings.each {
+                    mappings++
+                    if (it.outOfFrame) {
+                        oofMappings++
+                    }
                 }
+
+                pw.println(condition + "\t" + sample + "\t" + score + "\t" + mappings + "\t" + oofMappings)
+            }*/
+
+            accumulator.countersByGene.each {
+                pw.println([condition, sample, it.key,
+                            it.value.score, it.value.mappings, it.value.oofMappings,
+                            it.value.codingExonCount, it.value.transcripts.size()].join("\t"))
             }
-        }
-
-        sout "Finished processing ${junctionList.size()} junctions. " +
-                "Mapped ${accumulator.mappedJunctionsCounter}, ${accumulator.totalMappingsCounter} total mappings."
-
-        sout "Summarizing"
-        def geneStats = accumulator.collectGeneStats()
-        sout "Got statistics for ${geneStats.size()} genes"
-
-        sout "Writing output"
-        def condition = conditions[i]
-        geneStats.each {
-            pw.println(condition + "\t" + sample + "\t" + it.toString())
         }
     }
 }

@@ -29,22 +29,23 @@ class SimpleJunctionMapper implements JunctionMapper {
     @Override
     MappedJunction map(Junction junction) {
         def mappings = new ArrayList<Mapping>()
-        // no chimeric junctions
         def transcripts1 = new HashSet(genomicInfoProvider.getTranscripts(junction.chr, junction.range1)),
             transcripts2 = new HashSet(genomicInfoProvider.getTranscripts(junction.chr, junction.range2))
 
-        transcripts1.retainAll(transcripts2)
+        transcripts1.each { Transcript transcript1 ->
+            transcripts2.each { Transcript transcript2 ->
+                if (transcript1.geneId == transcript2.geneId && // no chimeric junctions
+                        junction.strand == transcript1.strand) {
+                    def exon1 = transcript1.exons.find { it.overlap(junction.range1) },
+                        exon2 = transcript2.exons.find { it.overlap(junction.range2) }
 
-        transcripts1.each { Transcript transcript ->
-            // same transcript mappings only
-            def exon1 = transcript.exons.find { it.overlap(junction.range1) },
-                exon2 = transcript.exons.find { it.overlap(junction.range2) }
-
-            if (exon1 && exon2) {
-                mappings << transcript.strand ? new Mapping(exon1, exon2) : new Mapping(exon2, exon1)
+                    if (exon1 && exon2) {
+                        mappings << (transcript1.strand ? new Mapping(exon1, exon2) : new Mapping(exon2, exon1))
+                    }
+                }
             }
         }
-        
+
         new MappedJunction(mappings, junction)
     }
 }
